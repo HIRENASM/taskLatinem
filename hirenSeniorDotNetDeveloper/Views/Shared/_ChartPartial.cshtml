@@ -1,0 +1,45 @@
+﻿@model ChartViewModel
+@using System.Text.Json
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">@Model.ChartTitle</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="@Model.ChartId" height="200"></canvas>
+        @Html.Raw(JsonSerializer.Serialize(Model.Datasets))
+        @Model.ChartId
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function () {
+            const ctx = document.getElementById('@Model.ChartId')?.getContext('2d');
+            if (!ctx) {
+                console.error("Canvas not found: @Model.ChartId");
+                return;
+            }
+
+            new Chart(ctx, {
+                type: '@Model.ChartType',
+                data: {
+                    labels: @Html.Raw(JsonSerializer.Serialize(Model.Labels)),
+                    datasets: @Html.Raw(JsonSerializer.Serialize(Model.Datasets))
+                                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: {
+                            display: true,
+                            text: '@Model.ChartTitle'
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+}

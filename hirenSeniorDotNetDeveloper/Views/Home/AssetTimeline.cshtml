@@ -1,0 +1,279 @@
+﻿@model TimelineChartViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Asset Status Timeline Chart";
+}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-calendar me-2"></i> @Json.Serialize(Model.ChartTitle)
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="timelineChart" style="height:60vh;width:100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const colors = {
+        idle: '#d3d3d3',
+        working: '#e66b37',
+        operating: '#1ab7b1',
+        error: '#b0a43d'
+    };
+
+    const rawData = @Html.Raw(JsonSerializer.Serialize(Model.AssetData));
+
+    function timeToMinutes(t) {
+        const [hh, mm] = t.split(':').map(Number);
+        return hh * 60 + mm;
+    }
+
+    let minTime = 24 * 60;
+    let maxTime = 0;
+
+    Object.values(rawData).forEach(blocks => {
+        blocks.forEach(({ start, end }) => {
+            minTime = Math.min(minTime, timeToMinutes(start));
+            maxTime = Math.max(maxTime, timeToMinutes(end));
+        });
+    });
+
+    const assetNames = Object.keys(rawData);
+    const datasets = [];
+
+    assetNames.forEach((asset) => {
+        const blocks = rawData[asset];
+        blocks.forEach((block) => {
+            const start = timeToMinutes(block.start);
+            const end = timeToMinutes(block.end);
+            const duration = end - start;
+
+            datasets.push({
+                label: `${asset} ${block.status}`,
+                data: [{
+                    x: duration,
+                    y: asset
+                }],
+                backgroundColor: colors[block.status],
+                borderSkipped: false,
+                barStart: start
+            });
+        });
+    });
+
+    const barStartPlugin = {
+        id: 'barStartPlugin',
+        afterRender(chart) {
+            const ctx = chart.ctx;
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+
+            chart.data.datasets.forEach((dataset) => {
+                const meta = chart.getDatasetMeta(chart.data.datasets.indexOf(dataset));
+
+                meta.data.forEach((bar, index) => {
+                    const { x: duration, y: asset } = dataset.data[index];
+                    const start = dataset.barStart ?? 0;
+
+                    const xStart = xScale.getPixelForValue(start);
+                    const xEnd = xScale.getPixelForValue(start + duration);
+                    const yPos = bar.y;
+                    const barHeight = yScale.getBandwidth?.() || 20;
+                    const yTop = yPos - barHeight / 2;
+
+                    ctx.fillStyle = dataset.backgroundColor;
+                    ctx.fillRect(xStart, yTop, xEnd - xStart, barHeight);
+                });
+            });
+        }
+    };
+
+    // Calculate percentages per asset per status for custom Y-axis labels
+    const percentagesByAsset = {};
+    assetNames.forEach(asset => {
+        const blocks = rawData[asset];
+        const statusTime = { idle: 0, working: 0, operating: 0, error: 0 };
+        let total = 0;
+
+        blocks.forEach(({ start, end, status }) => {
+            const duration = timeToMinutes(end) - timeToMinutes(start);
+            total += duration;
+            statusTime[status] += duration;
+        });
+
+        percentagesByAsset[asset] = Object.entries(statusTime)
+            .filter(([, time]) => time > 0)
+            .map(([status, time]) => {
+                const percent = ((time / total) * 100).toFixed(0);
+                return { status, percent };
+            });
+    });
+
+    // Asset images, replace URLs with your actual images
+    const assetImages = {
+        'BL-08': 'https://e7.pngegg.com/pngimages/878/182/png-clipart-jcb-india-limited-skid-steer-loader-heavy-machinery-excavator-technic-vehicle.png',
+        'Q-47898': 'https://e7.pngegg.com/pngimages/878/182/png-clipart-jcb-india-limited-skid-steer-loader-heavy-machinery-excavator-technic-vehicle.png',
+        'D-26653': 'https://e7.pngegg.com/pngimages/878/182/png-clipart-jcb-india-limited-skid-steer-loader-heavy-machinery-excavator-technic-vehicle.png'
+    };
+
+    const loadedImages = {};
+    const loadImages = (urls) => {
+        const promises = Object.entries(urls).map(([key, url]) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = url;
+                img.onload = () => {
+                    loadedImages[key] = img;
+                    resolve();
+                };
+                img.onerror = () => {
+                    loadedImages[key] = null;
+                    resolve();
+                };
+            });
+        });
+        return Promise.all(promises);
+    };
+
+    const customYAxisLabelsPlugin = {
+        id: 'customYAxisLabels',
+        beforeDraw(chart) {
+            const ctx = chart.ctx;
+            const yScale = chart.scales.y;
+
+            ctx.save();
+            ctx.font = '12px Arial';
+            ctx.textBaseline = 'top';
+            ctx.fillStyle = '#000';
+
+            const lineHeight = 28;   
+            const imageSize = 35;
+            const padding = 4;
+
+            yScale.ticks.forEach((tick, index) => {
+                const y = yScale.getPixelForTick(index);
+                const asset = assetNames[index];
+                const img = loadedImages[asset];
+
+                // Left padding start for image + text
+                const startX = yScale.left + 20;
+                // Position of text aligned vertically with image center
+                const textY = y - imageSize / 2;
+
+                // Draw image if available
+                if (img) {
+                    ctx.drawImage(img, startX, y - imageSize / 2, imageSize, imageSize);
+                }
+
+                // Draw asset name next to image with padding
+                const textX = startX + (img ? imageSize + padding : 0);
+                ctx.fillText(asset, textX, y - imageSize / 2);
+
+                // Draw percentage bars + text below asset name line
+                const percents = percentagesByAsset[asset];
+                let offsetX = textX;
+
+                percents.forEach(({ status, percent }) => {
+                    const squareSize = 10;
+                    const squareY = y - imageSize / 2 + lineHeight;
+
+                    // Colored square
+                    ctx.fillStyle = colors[status];
+                    ctx.fillRect(offsetX, squareY, squareSize, squareSize);
+
+                    // Percentage text
+                    ctx.fillStyle = '#000';
+                    ctx.fillText(percent + '%', offsetX + squareSize + 4, squareY - 1);
+
+                    const textWidth = ctx.measureText(percent + '%').width;
+                    offsetX += squareSize + 4 + textWidth + 8;
+                });
+            });
+
+            ctx.restore();
+        }
+    };
+
+    const config = {
+        type: 'bar',
+        data: {
+            labels: assetNames,
+            datasets: datasets
+        },
+        options: {
+            indexAxis: 'y',
+            animation: false,
+            responsive: true,
+            maintainAspectRatio: false,
+            elements: {
+                bar: {
+                    backgroundColor: 'transparent'
+                }
+            },
+            scales: {
+                x: {
+                    position: 'top',  // <-- Move x-axis labels to the top
+                    min: minTime,
+                    max: maxTime,
+                    title: {
+                        display: true,
+                        text: 'Time (HH:mm)'
+                    },
+                    ticks: {
+                        stepSize: 60, // 1 hour interval
+                        callback: function (val) {
+                            const hours = Math.floor(val / 60);
+                            const minutes = val % 60;
+                            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                        }
+                    }
+                },
+                y: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Assets (3)'
+                    },
+                    ticks: {
+                        autoSkip: false,
+                        display: false // Hide default ticks to draw custom labels
+                    },
+                    afterFit: scale => {
+                        scale.width += 200; // Width for images + labels + percentages
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(context) {
+                            const dataset = context.dataset;
+                            const label = dataset.label.split(' ')[0];
+                            const blocks = rawData[label];
+                            const match = blocks.find(b => timeToMinutes(b.start) === dataset.barStart);
+                            if (!match) return '';
+                            return `${match.status.toUpperCase()}: ${match.start} - ${match.end}`;
+                        }
+                    }
+                }
+            }
+        },
+        plugins: [customYAxisLabelsPlugin, barStartPlugin]
+    };
+
+    // Wait for images to load, then create chart
+    loadImages(assetImages).then(() => {
+        const ctx = document.getElementById('timelineChart').getContext('2d');
+        new Chart(ctx, config);
+    });
+</script>

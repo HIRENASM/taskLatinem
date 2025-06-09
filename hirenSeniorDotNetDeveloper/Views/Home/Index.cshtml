@@ -1,0 +1,186 @@
+﻿@model DashboardChartsViewModel
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Dashboard Charts";
+}
+<div class="row">
+    <div class="col-6">
+        @* Line Chart *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-route me-2"></i> @Model.LineChart.ChartTitle
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="@Model.LineChart.ChartId" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        @* Stacked Bar Chart *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i> @Model.StackedBarChart.ChartTitle
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="@Model.StackedBarChart.ChartId" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        @* Pie Chart *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-car me-2"></i> @Model.PieChart.ChartTitle
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="@Model.PieChart.ChartId" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-6">
+        @* Bar Chart *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i> @Model.BarChart.ChartTitle
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="@Model.BarChart.ChartId" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function renderChart(chartId, chartType, chartTitle, labels, datasets, stacked = false) {
+                const ctx = document.getElementById(chartId)?.getContext('2d');
+                if (!ctx) {
+                    console.error("Canvas not found: " + chartId);
+                    return;
+                }
+
+                const centerTextPlugin = {
+                    id: 'centerText',
+                    beforeDraw(chart) {
+                        if (chart.config.type !== 'doughnut') return;
+
+                        const ctx = chart.ctx;
+                        const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        const width = chart.width;
+                        const height = chart.height;
+
+                        ctx.save();
+                        ctx.font = 'bold ' + (height / 10) + 'px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#333';
+                        ctx.fillText(total, width / 2, height / 2);
+                        ctx.restore();
+                    }
+                };
+
+                const isDoughnut = chartType === "doughnut";
+
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: isDoughnut,
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        title: {
+                            display: false
+                        }
+                    },
+                    scales: (chartType === 'bar' || chartType === 'line') ? {
+                        x: {
+                            stacked: stacked,
+                            grid: { display: false },
+                            ticks: {
+                                minRotation: 55,
+                                maxRotation: 55,
+                                stepSize: 20,
+                                maxTicksLimit: 20
+                            }
+                        },
+                        y: {
+                            stacked: stacked,
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    } : undefined
+                };
+
+                if (isDoughnut) {
+                    options.cutout = '50%';
+                }
+
+                new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: options
+                    // plugins: isDoughnut ? [centerTextPlugin] : []
+                });
+            }
+
+            // Dynamic chart rendering
+            renderChart(
+                '@Model.PieChart.ChartId',
+                '@Model.PieChart.ChartType',
+                '@Model.PieChart.ChartTitle',
+        @Html.Raw(JsonSerializer.Serialize(Model.PieChart.Labels)),
+        @Html.Raw(JsonSerializer.Serialize(Model.PieChart.Datasets))
+                            );
+
+            renderChart(
+                '@Model.BarChart.ChartId',
+                '@Model.BarChart.ChartType',
+                '@Model.BarChart.ChartTitle',
+        @Html.Raw(JsonSerializer.Serialize(Model.BarChart.Labels)),
+        @Html.Raw(JsonSerializer.Serialize(Model.BarChart.Datasets)),
+                true
+            );
+
+            renderChart(
+                '@Model.LineChart.ChartId',
+                '@Model.LineChart.ChartType',
+                '@Model.LineChart.ChartTitle',
+        @Html.Raw(JsonSerializer.Serialize(Model.LineChart.Labels)),
+        @Html.Raw(JsonSerializer.Serialize(Model.LineChart.Datasets))
+                            );
+
+            renderChart(
+                '@Model.StackedBarChart.ChartId',
+                '@Model.StackedBarChart.ChartType',
+                '@Model.StackedBarChart.ChartTitle',
+        @Html.Raw(JsonSerializer.Serialize(Model.StackedBarChart.Labels)),
+        @Html.Raw(JsonSerializer.Serialize(Model.StackedBarChart.Datasets)),
+                true
+            );
+        });
+    </script>
+}
