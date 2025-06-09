@@ -15,14 +15,30 @@ namespace hirenSeniorDotNetDeveloper.Controllers
 
         public IActionResult Index()
         {
-            var dateLabels = new List<string> { "20 Mar", "22 Mar", "24 Mar", "26 Mar", "28 Mar", "10 Mar", "1 Apr", "3 Apr" };
+            var dateLabels = new List<string>
+            {
+            "20 Mar", "22 Mar", "24 Mar", "26 Mar", "28 Mar", "10 Mar", "1 Apr", "3 Apr"
+            };
 
-            var stackedBarChart = new ChartViewModel
+            var dashboardModel = new DashboardChartsViewModel
+            {
+                PieChart = CreateDoughnutChart(),
+                BarChart = CreateBarChart(dateLabels),
+                LineChart = CreateLineChart(dateLabels),
+                StackedBarChart = CreateStackedBarChart(dateLabels)
+            };
+
+            return View(dashboardModel);
+        }
+
+        private ChartViewModel CreateStackedBarChart(List<string> labels)
+        {
+            return new ChartViewModel
             {
                 ChartId = "stackedBarChart",
                 ChartTitle = "Engine hours",
                 ChartType = "bar",
-                Labels = dateLabels,
+                Labels = labels,
                 Datasets = new List<ChartDataset>
                 {
                     new ChartDataset
@@ -39,13 +55,16 @@ namespace hirenSeniorDotNetDeveloper.Controllers
                     }
                 }
             };
+        }
 
-            var messageReceivedChart = new ChartViewModel
+        private ChartViewModel CreateBarChart(List<string> labels)
+        {
+            return new ChartViewModel
             {
                 ChartId = "messageReceivedChart",
                 ChartTitle = "Messages Received",
                 ChartType = "bar",
-                Labels = dateLabels,
+                Labels = labels,
                 Datasets = new List<ChartDataset>
                 {
                     new ChartDataset
@@ -62,13 +81,16 @@ namespace hirenSeniorDotNetDeveloper.Controllers
                     }
                 }
             };
+        }
 
-            var lineModel = new ChartViewModel
+        private ChartViewModel CreateLineChart(List<string> labels)
+        {
+            return new ChartViewModel
             {
                 ChartId = "line",
                 ChartTitle = "Traveled distance (431 KM)",
                 ChartType = "line",
-                Labels = dateLabels,
+                Labels = labels,
                 Datasets = new List<ChartDataset>
                 {
                     new ChartDataset
@@ -93,8 +115,11 @@ namespace hirenSeniorDotNetDeveloper.Controllers
                     }
                 }
             };
+        }
 
-            var doughnutModel = new ChartViewModel
+        private ChartViewModel CreateDoughnutChart()
+        {
+            return new ChartViewModel
             {
                 ChartId = "doughnut",
                 ChartTitle = "Activity breakdown (Hours)",
@@ -119,51 +144,41 @@ namespace hirenSeniorDotNetDeveloper.Controllers
                     }
                 }
             };
-
-            var dashboardModel = new DashboardChartsViewModel
-            {
-                PieChart = doughnutModel,
-                BarChart = messageReceivedChart,
-                LineChart = lineModel,
-                StackedBarChart = stackedBarChart
-            };
-
-            return View(dashboardModel);
         }
 
         public IActionResult AssetTimeline()
         {
             var viewModel = new TimelineChartViewModel
             {
-                ChartTitle = "Asset Status Timeline Chart",
+                ChartTitle = "Day Overview",
                 AssetData = new Dictionary<string, List<AssetStatusBlock>>
                 {
                     ["BL-08"] = new List<AssetStatusBlock>
                     {
-                        new AssetStatusBlock { Start = "11:00", End = "11:15", Status = "idle" },
-                        new AssetStatusBlock { Start = "11:15", End = "11:50", Status = "working" },
-                        new AssetStatusBlock { Start = "11:50", End = "12:00", Status = "operating" },
-                        new AssetStatusBlock { Start = "12:00", End = "12:01", Status = "error" },
-                        new AssetStatusBlock { Start = "13:00", End = "16:00", Status = "operating" },
-                        new AssetStatusBlock { Start = "16:00", End = "16:30", Status = "working" },
-                        new AssetStatusBlock { Start = "16:30", End = "17:00", Status = "operating" },
-                        new AssetStatusBlock { Start = "17:15", End = "17:30", Status = "operating" }
+                        new() { Start = "11:00", End = "11:15", Status = "idle" },
+                        new() { Start = "11:15", End = "11:50", Status = "working" },
+                        new() { Start = "11:50", End = "12:00", Status = "operating" },
+                        new() { Start = "12:00", End = "12:01", Status = "error" },
+                        new() { Start = "13:00", End = "16:00", Status = "operating" },
+                        new() { Start = "16:00", End = "16:30", Status = "working" },
+                        new() { Start = "16:30", End = "17:00", Status = "operating" },
+                        new() { Start = "17:15", End = "17:30", Status = "operating" }
                     },
                     ["Q-47898"] = new List<AssetStatusBlock>
                     {
-                        new AssetStatusBlock { Start = "11:00", End = "15:45", Status = "operating" },
-                        new AssetStatusBlock { Start = "15:45", End = "16:00", Status = "error" },
-                        new AssetStatusBlock { Start = "16:00", End = "17:00", Status = "operating" }
+                        new() { Start = "11:00", End = "15:45", Status = "operating" },
+                        new() { Start = "15:45", End = "16:00", Status = "error" },
+                        new() { Start = "16:00", End = "17:00", Status = "operating" }
                     },
                     ["D-26653"] = new List<AssetStatusBlock>
                     {
-                        new AssetStatusBlock { Start = "11:00", End = "11:20", Status = "idle" },
-                        new AssetStatusBlock { Start = "11:20", End = "13:30", Status = "working" },
-                        new AssetStatusBlock { Start = "13:30", End = "14:00", Status = "operating" },
-                        new AssetStatusBlock { Start = "14:00", End = "14:30", Status = "working" },
-                        new AssetStatusBlock { Start = "14:30", End = "15:00", Status = "operating" },
-                        new AssetStatusBlock { Start = "15:00", End = "15:30", Status = "working" },
-                        new AssetStatusBlock { Start = "15:30", End = "16:00", Status = "operating" }
+                        new() { Start = "11:00", End = "11:20", Status = "idle" },
+                        new() { Start = "11:20", End = "13:30", Status = "working" },
+                        new() { Start = "13:30", End = "14:00", Status = "operating" },
+                        new() { Start = "14:00", End = "14:30", Status = "working" },
+                        new() { Start = "14:30", End = "15:00", Status = "operating" },
+                        new() { Start = "15:00", End = "15:30", Status = "working" },
+                        new() { Start = "15:30", End = "16:00", Status = "operating" }
                     }
                 }
             };
@@ -174,7 +189,11 @@ namespace hirenSeniorDotNetDeveloper.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel
+            {
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            });
         }
     }
+
 }

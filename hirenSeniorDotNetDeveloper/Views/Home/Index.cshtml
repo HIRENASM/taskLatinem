@@ -3,63 +3,32 @@
 
 @{
     ViewData["Title"] = "Dashboard Charts";
-}
+} 
+
 <div class="row">
-    <div class="col-6">
-        @* Line Chart *@
-        <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-route me-2"></i> @Model.LineChart.ChartTitle
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="@Model.LineChart.ChartId" height="200"></canvas>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_ChartCard", new ChartViewModel {
+        ChartId = Model.LineChart.ChartId,
+        ChartTitle = Model.LineChart.ChartTitle,
+        IconClass = "fas fa-route"
+    })
 
-    <div class="col-6">
-        @* Stacked Bar Chart *@
-        <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-cogs me-2"></i> @Model.StackedBarChart.ChartTitle
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="@Model.StackedBarChart.ChartId" height="200"></canvas>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_ChartCard", new ChartViewModel {
+        ChartId = Model.StackedBarChart.ChartId,
+        ChartTitle = Model.StackedBarChart.ChartTitle,
+        IconClass = "fas fa-cogs"
+    })
 
-    <div class="col-6">
-        @* Pie Chart *@
-        <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-car me-2"></i> @Model.PieChart.ChartTitle
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="@Model.PieChart.ChartId" height="200"></canvas>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_ChartCard", new ChartViewModel {
+        ChartId = Model.PieChart.ChartId,
+        ChartTitle = Model.PieChart.ChartTitle,
+        IconClass = "fas fa-car"
+    })
 
-    <div class="col-6">
-        @* Bar Chart *@
-        <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-bar me-2"></i> @Model.BarChart.ChartTitle
-                </h5>
-            </div>
-            <div class="card-body">
-                <canvas id="@Model.BarChart.ChartId" height="200"></canvas>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_ChartCard", new ChartViewModel {
+        ChartId = Model.BarChart.ChartId,
+        ChartTitle = Model.BarChart.ChartTitle,
+        IconClass = "fas fa-chart-bar"
+    })
 </div>
 
 

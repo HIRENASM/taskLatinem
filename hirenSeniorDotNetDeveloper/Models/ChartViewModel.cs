@@ -43,6 +43,8 @@ public class ChartViewModel
     public List<string> Labels { get; set; } = new();
     public List<ChartDataset> Datasets { get; set; } = new();
 
+    public string IconClass { get; set; }
+
 }
 
 public class DashboardChartsViewModel
@@ -82,6 +84,7 @@ public class BorderRadiusJsonConverter : JsonConverter<object>
         }
     }
 }
+
 public class TimelineChartViewModel
 {
     public string ChartTitle { get; set; }
